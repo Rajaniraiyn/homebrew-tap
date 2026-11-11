@@ -5,32 +5,30 @@
  cask "wacom-tablet" do
    version "6.4.15-2"
    sha256 "84af01a189e7416b01c2f37c51e3f47ae16de60b6211bfc6cdd190d2567c90c0"
-@@ -15,6 +16,24 @@
+@@ -15,6 +16,22 @@
    depends_on macos: :ventura
  
    pkg "Install Wacom Tablet.pkg"
 +
-+  postflight do
-+    system_command "/bin/bash", args: ["-c", <<~EOS], sudo: true, must_succeed: true
-+      set -e
-+      if /bin/launchctl print system/com.wacom.UpdateHelper >/dev/null 2>&1; then
-+        /bin/launchctl bootout system/com.wacom.UpdateHelper
-+      fi
-+      /bin/rm -rf -- \
-+        "/Library/LaunchDaemons/com.wacom.UpdateHelper.plist" \
-+        "/Library/PrivilegedHelperTools/com.wacom.UpdateHelper.app" \
-+        "/Library/PreferencePanes/WacomCenter.prefpane" \
-+        "/Applications/Wacom Tablet.localized/Wacom Center.app" \
-+        "/Applications/Wacom Tablet.localized/Wacom Display Settings.app" \
-+        "/Applications/Wacom Tablet.localized/.Tablet/Wacom Experience Program.app" \
-+        "/Applications/Wacom Tablet.localized/.Tablet/FirmwareUpdater.app" \
-+        "/Applications/Wacom Tablet.localized/.Tablet/UpgradeHelper.app"
-+    EOS
++  postflight_steps do
++    run "/bin/bash",
++        args: ["-c", "/bin/launchctl print system/com.wacom.UpdateHelper >/dev/null 2>&1 || exit 0; exec /bin/launchctl bootout system/com.wacom.UpdateHelper"],
++        sudo: true
++    remove [
++      "/Library/LaunchDaemons/com.wacom.UpdateHelper.plist",
++      "/Library/PrivilegedHelperTools/com.wacom.UpdateHelper.app",
++      "/Library/PreferencePanes/WacomCenter.prefpane",
++      "/Applications/Wacom Tablet.localized/Wacom Center.app",
++      "/Applications/Wacom Tablet.localized/Wacom Display Settings.app",
++      "/Applications/Wacom Tablet.localized/.Tablet/Wacom Experience Program.app",
++      "/Applications/Wacom Tablet.localized/.Tablet/FirmwareUpdater.app",
++      "/Applications/Wacom Tablet.localized/.Tablet/UpgradeHelper.app",
++    ], recursive: true, sudo: true
 +  end
  
    uninstall launchctl: [
                "com.wacom.DataStoreMgr",
-@@ -34,6 +53,9 @@
+@@ -34,6 +51,9 @@
              pkgutil:   "com.wacom.TabletInstaller"
  
    zap trash: [

@@ -39,13 +39,14 @@ cask "spotify" do
   ]
 
   # Validate the rolling Spotify download before installing or patching it.
-  preflight do
-    system_command "/bin/bash", args: ["-c", <<~EOS, "--", "#{staged_path}/Spotify.app", "#{version.csv.first}"], must_succeed: true
+  preflight_steps do
+    run "/bin/bash", args: ["-c", <<~'EOS', "--", "{{staged_path}}/Spotify.app", "{{version}}"]
       set -e
       actual=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$1/Contents/Info.plist")
       actual=${actual%%.g*}
-      if [ "$actual" != "$2" ]; then
-        echo "SpotX supports Spotify $2, but the downloaded app is $actual. Try again when the tap is updated." >&2
+      expected=${2%%,*}
+      if [ "$actual" != "$expected" ]; then
+        echo "SpotX supports Spotify $expected, but the downloaded app is $actual. Try again when the tap is updated." >&2
         exit 1
       fi
     EOS
