@@ -52,15 +52,18 @@ cask "spotify" do
     EOS
   end
 
-  postflight do
-    system_command "/bin/bash", args: ["-c", <<~EOS, "--", "#{appdir}", "#{version.csv.second}", "#{version.csv.third}"], must_succeed: true
+  postflight_steps do
+    terminate_process "Spotify"
+    remove "~/Library/Application Support/Spotify/PersistentCache/Update", recursive: true
+    run "/bin/bash", args: ["-c", <<~'EOS', "--", "{{appdir}}", "{{version}}"], network_access: true, print_stdout: true
       set -e
+      IFS=, read -r spotify_version commit build_version <<< "$2"
       script=$(/usr/bin/mktemp "${TMPDIR:-/tmp}/spotx.XXXXXXXX")
       trap 'rm -f "$script"' EXIT
-      /usr/bin/curl -fsSL "https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/$2/spotx.sh" -o "$script"
+      /usr/bin/curl -fsSL "https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/$commit/spotx.sh" -o "$script"
       echo "eb79977b4e356e94bbac8fb321267fa2cb1de43c7737eb35ec9668fe658b34e0  $script" | /usr/bin/shasum -a 256 -c -
       build=$(/usr/bin/awk -F '"' '/^buildVer="/ {print $2}' "$script")
-      if [ "$build" != "$3" ]; then
+      if [ "$build" != "$build_version" ]; then
         echo "SpotX build version does not match the cask; no patch was applied." >&2
         exit 1
       fi
