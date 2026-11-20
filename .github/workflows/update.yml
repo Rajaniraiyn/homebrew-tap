@@ -4,9 +4,6 @@ on:
     - cron: "17 7 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 concurrency:
   group: sync-casks
   cancel-in-progress: false
@@ -14,6 +11,8 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/update.py
@@ -23,6 +22,63 @@ jobs:
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Sync casks"
+            git commit -m "Sync casks" -m "Co-authored-by: Rajaniraiyn <72294760+Rajaniraiyn@users.noreply.github.com>"
             git push
           fi
+
+  review-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      casks: ${{ steps.list.outputs.casks }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          python3 -c 'import json, pathlib, re; print("casks=" + json.dumps(sorted(p.stem for p in pathlib.Path("scripts/review").glob("*.py") if re.fullmatch(r"[a-z0-9][a-z0-9@+-]*", p.stem))))' >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: review-index
+    if: ${{ needs.review-index.outputs.casks != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cask: ${{ fromJSON(needs.review-index.outputs.casks) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare candidate
+        env:
+          CASK: ${{ matrix.cask }}
+        run: python3 "scripts/review/$CASK.py"
+      - id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Prepare review instructions
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          CASK: ${{ matrix.cask }}
+        run: |
+          if [ -f "scripts/review/$CASK.md" ]; then
+            cp "scripts/review/$CASK.md" "$RUNNER_TEMP/review.md"
+          else
+            printf 'Review and test this candidate before merging.\n' > "$RUNNER_TEMP/review.md"
+          fi
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          branch: automation/review-${{ matrix.cask }}
+          delete-branch: false
+          title: "Review ${{ matrix.cask }} update"
+          commit-message: |
+            Prepare ${{ matrix.cask }} update for review
+
+            Co-authored-by: Rajaniraiyn <72294760+Rajaniraiyn@users.noreply.github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          body-path: ${{ runner.temp }}/review.md

@@ -22,7 +22,8 @@ if version.group(1) != REVIEWED_VERSION:
     print(f"Wacom {version.group(1)} needs removal-list review; keeping {REVIEWED_VERSION}")
     raise SystemExit(0)
 if f'  sha256 "{REVIEWED_SHA256}"' not in upstream:
-    raise ValueError("The Wacom installer checksum changed; review it before syncing")
+    print("Wacom installer checksum changed; keeping the reviewed cask")
+    raise SystemExit(0)
 
 with tempfile.TemporaryDirectory() as directory:
     target = Path(directory) / "wacom-tablet.rb"
