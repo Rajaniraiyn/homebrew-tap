@@ -3,19 +3,14 @@
 
 import re
 import subprocess
-import tempfile
-import urllib.request
-from pathlib import Path
+from scripts.common import ROOT, apply_patch, fetch
 
-ROOT = Path(__file__).resolve().parents[2]
 URL = "https://raw.githubusercontent.com/Homebrew/homebrew-cask/HEAD/Casks/w/wacom-tablet.rb"
 SYNC = ROOT / "scripts/sync/wacom-tablet.py"
 PATCH = ROOT / "patches/wacom-tablet.patch"
 CASK = ROOT / "Casks/wacom-tablet.rb"
 
-request = urllib.request.Request(URL, headers={"User-Agent": "personal-homebrew-tap"})
-with urllib.request.urlopen(request, timeout=30) as response:
-    upstream = response.read().decode()
+upstream = fetch(URL).decode()
 version = re.search(r'^  version "(\d+(?:\.\d+)+(?:-\d+[a-z]?)?)"$', upstream, re.MULTILINE)
 checksum = re.search(r'^  sha256 "([0-9a-f]{64})"$', upstream, re.MULTILINE)
 if not version or not checksum:
@@ -39,16 +34,10 @@ for old, new in ((old_version.group(1), new_version), (old_checksum.group(1), ne
 sync = sync.replace(f'REVIEWED_VERSION = "{old_version.group(1)}"', f'REVIEWED_VERSION = "{new_version}"', 1)
 sync = sync.replace(f'REVIEWED_SHA256 = "{old_checksum.group(1)}"', f'REVIEWED_SHA256 = "{new_checksum}"', 1)
 
-with tempfile.TemporaryDirectory() as directory:
-    target = Path(directory) / "wacom-tablet.rb"
-    patch_file = Path(directory) / "wacom-tablet.patch"
-    target.write_text(upstream)
-    patch_file.write_text(patch)
-    result = subprocess.run(
-        ["patch", "-t", "-N", "-F", "0", "-p1", "-i", str(patch_file)],
-        cwd=directory,
-    )
-    candidate = target.read_text() if result.returncode == 0 else None
+try:
+    candidate = apply_patch("wacom-tablet", upstream, patch)
+except subprocess.CalledProcessError:
+    candidate = None
 
 SYNC.write_text(sync)
 PATCH.write_text(patch)

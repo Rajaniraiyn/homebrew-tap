@@ -4,21 +4,11 @@
 import hashlib
 import json
 import re
-import subprocess
-import tempfile
-import urllib.request
-from pathlib import Path
+from scripts.common import ROOT, apply_patch, fetch
 
-ROOT = Path(__file__).resolve().parents[2]
 SPOTIFY = "https://raw.githubusercontent.com/Homebrew/homebrew-cask/HEAD/Casks/s/spotify.rb"
 API = "https://api.github.com/repos/SpotX-Official/SpotX-Bash/commits/main"
 RAW = "https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/{}/spotx.sh"
-
-
-def fetch(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "personal-homebrew-tap"})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return response.read()
 
 
 commit = json.loads(fetch(API))["sha"]
@@ -38,15 +28,7 @@ if version.group(1) != supported:
     raise SystemExit(0)
 
 upstream = upstream[:version.start(1)] + "@SPOTIFY_VERSION@" + upstream[version.end(1):]
-with tempfile.TemporaryDirectory() as directory:
-    target = Path(directory) / "spotify.rb"
-    target.write_text(upstream)
-    subprocess.run(
-        ["patch", "-t", "-N", "-F", "0", "-p1", "-i", str(ROOT / "patches/spotify.patch")],
-        cwd=directory,
-        check=True,
-    )
-    result = target.read_text()
+result = apply_patch("spotify", upstream, (ROOT / "patches/spotify.patch").read_text())
 
 for key, value in {
     "@SPOTIFY_VERSION@": supported,

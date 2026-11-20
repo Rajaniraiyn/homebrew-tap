@@ -3,23 +3,16 @@
 
 import hashlib
 import re
-import urllib.request
 import xml.etree.ElementTree as ET
-from pathlib import Path
+from scripts.common import ROOT, open_url
 
-ROOT = Path(__file__).resolve().parents[2]
 SPARKLE = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
-
-
-def fetch(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "personal-homebrew-tap"})
-    return urllib.request.urlopen(request, timeout=60)
 
 
 for channel in ("preview", "snapshot"):
     cask = ROOT / f"Casks/rex@{channel}.rb"
     base = f"https://blob.superlogical.com/public/rex-app/{channel}/"
-    with fetch(f"{base}appcast.xml") as response:
+    with open_url(f"{base}appcast.xml", timeout=60) as response:
         item = ET.fromstring(response.read()).find("./channel/item")
     if item is None:
         raise ValueError(f"Rex {channel} feed contains no releases")
@@ -42,7 +35,7 @@ for channel in ("preview", "snapshot"):
         continue
 
     digest = hashlib.sha256()
-    with fetch(expected) as response:
+    with open_url(expected, timeout=60) as response:
         for chunk in iter(lambda: response.read(1024 * 1024), b""):
             digest.update(chunk)
     content = content[:match.start(1)] + version + content[match.end(1):]
