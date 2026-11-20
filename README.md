@@ -13,6 +13,6 @@ brew install --cask rajaniraiyn/tap/rex@preview
 
 To remove an app and its settings, use `brew uninstall --cask --zap rajaniraiyn/tap/<cask>`. Zap deletes user data. For Rex, it stops local Rex servers and deletes their saved state and configuration; active sessions will end.
 
-Run `python3 scripts/update.py` to sync casks from upstream. New Wacom versions get a review pull request; other casks continue syncing independently.
+Run `python3 -B -m scripts.sync` to sync casks from upstream. New Wacom versions get a review pull request; other casks continue syncing independently.
 
-Add automatic syncs under `scripts/sync/` and review candidates under `scripts/review/`. Review scripts use one persistent pull request per cask; an optional matching `.md` file supplies review instructions.
+Add automatic syncs under `scripts/sync/` and review candidates under `scripts/review/`. Both can use `scripts/common.py` and run as Python modules. Review scripts use one persistent pull request per cask; an optional matching `.md` file supplies review instructions.
