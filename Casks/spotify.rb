@@ -2,7 +2,7 @@
 cask "spotify" do
   arch arm: "ARM64"
 
-  version "1.3.10.2586,42b42d9ee3568883bfbb1ac191d7881a84c52d1b,1.3.10.2586.g81a118a22460"
+  version "1.3.10.2586,bd88fc8187834ae6a14998dc66f13bdfbb9f9ba7,1.3.10.2586.g81a118a22460"
   sha256 :no_check
 
   url "https://download.scdn.co/Spotify#{arch}.dmg"
@@ -62,7 +62,7 @@ cask "spotify" do
       trap 'rm -f "$script" "${log:-}"' EXIT
       log=$(/usr/bin/mktemp "${TMPDIR:-/tmp}/spotx-log.XXXXXXXX")
       /usr/bin/curl -fsSL "https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/$commit/spotx.sh" -o "$script"
-      echo "96d8ad9bdadad9432ccefe5ff3b45c3ee8038e97d87246b2d929bb91c3d170d7  $script" | /usr/bin/shasum -a 256 -c -
+      echo "91d67cd31b5cab35e6df14eb0f907e5541bac6638b7467fd19ba834d34438bc3  $script" | /usr/bin/shasum -a 256 -c -
       build=$(/usr/bin/awk -F '"' '/^buildVer="/ {print $2}' "$script")
       if [ "$build" != "$build_version" ]; then
         echo "SpotX build version does not match the cask; no patch was applied." >&2
