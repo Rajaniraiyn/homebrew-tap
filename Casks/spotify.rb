@@ -14,33 +14,9 @@ cask "spotify" do
 
   app "Spotify.app"
 
-  uninstall launchctl: [
-              "*.spotify.client.*",
-              "com.spotify.client.startuphelper",
-              "com.spotify.webhelper",
-            ],
-            quit:      "com.spotify.client"
-
-  zap trash: [
-    "~/Library/Application Support/io.branch/com.spotify.client",
-    "~/Library/HTTPStorages/com.spotify.client-launcher",
-    "~/Library/Application Support/com.apple.sharedfilelist/com.apple.LSSharedFileList.ApplicationRecentDocuments/com.spotify.client.startuphelper.sfl*",
-    "~/Library/Application Support/Spotify",
-    "~/Library/Caches/com.spotify.client",
-    "~/Library/Caches/com.spotify.client.helper",
-    "~/Library/Cookies/com.spotify.client.binarycookies",
-    "~/Library/HTTPStorages/com.spotify.client",
-    "~/Library/HTTPStorages/com.spotify.client.helper",
-    "~/Library/Logs/Spotify",
-    "~/Library/Preferences/com.spotify.client.helper.plist",
-    "~/Library/Preferences/com.spotify.client.plist",
-    "~/Library/Saved Application State/com.spotify.client.savedState",
-    "~/Library/WebKit/com.spotify.client",
-  ]
-
   # Validate the rolling Spotify download before installing or patching it.
   preflight_steps do
-    run "/bin/bash", args: ["-c", <<~'EOS', "--", "{{staged_path}}/Spotify.app", "{{version}}"]
+    run "/bin/bash", args: ["-c", <<~EOS, "--", "{{staged_path}}/Spotify.app", "{{version}}"]
       set -e
       actual=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$1/Contents/Info.plist")
       actual=${actual%%.g*}
@@ -55,7 +31,7 @@ cask "spotify" do
   postflight_steps do
     terminate_process "Spotify"
     remove "~/Library/Application Support/Spotify/PersistentCache/Update", recursive: true
-    run "/bin/bash", args: ["-c", <<~'EOS', "--", "{{appdir}}", "{{version}}"], network_access: true
+    run "/bin/bash", args: ["-c", <<~EOS, "--", "{{appdir}}", "{{version}}"], network_access: true
       set -e
       IFS=, read -r spotify_version commit build_version <<< "$2"
       script=$(/usr/bin/mktemp "${TMPDIR:-/tmp}/spotx.XXXXXXXX")
@@ -77,4 +53,28 @@ cask "spotify" do
       fi
     EOS
   end
+
+  uninstall launchctl: [
+              "*.spotify.client.*",
+              "com.spotify.client.startuphelper",
+              "com.spotify.webhelper",
+            ],
+            quit:      "com.spotify.client"
+
+  zap trash: [
+    "~/Library/Application Support/com.apple.sharedfilelist/com.apple.LSSharedFileList.ApplicationRecentDocuments/com.spotify.client.startuphelper.sfl*",
+    "~/Library/Application Support/io.branch/com.spotify.client",
+    "~/Library/Application Support/Spotify",
+    "~/Library/Caches/com.spotify.client",
+    "~/Library/Caches/com.spotify.client.helper",
+    "~/Library/Cookies/com.spotify.client.binarycookies",
+    "~/Library/HTTPStorages/com.spotify.client",
+    "~/Library/HTTPStorages/com.spotify.client-launcher",
+    "~/Library/HTTPStorages/com.spotify.client.helper",
+    "~/Library/Logs/Spotify",
+    "~/Library/Preferences/com.spotify.client.helper.plist",
+    "~/Library/Preferences/com.spotify.client.plist",
+    "~/Library/Saved Application State/com.spotify.client.savedState",
+    "~/Library/WebKit/com.spotify.client",
+  ]
 end

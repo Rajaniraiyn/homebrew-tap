@@ -1,18 +1,15 @@
-cask "rex@snapshot" do
-  version "0.1.0,2135"
-  sha256 "832a11fd5464a88f07d7bf152343b2a47a84053c7d2c040dd6c589537f569fb6"
+require "#{HOMEBREW_LIBRARY}/Taps/rajaniraiyn/homebrew-tap/lib/rex_download_strategy"
 
-  url "https://blob.superlogical.com/public/rex-app/snapshot/Rex-#{version.csv.first}-#{version.csv.second}.dmg"
+cask "rex@snapshot" do
+  version :latest
+  sha256 :no_check
+
+  url "https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml",
+      using: RexDownloadStrategy
   name "Rex Snapshot"
   desc "Terminal and multiplexer (snapshot)"
   homepage "https://www.superlogical.com/rex"
 
-  livecheck do
-    url "https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml"
-    strategy :sparkle
-  end
-
-  auto_updates true
   conflicts_with cask: "rajaniraiyn/tap/rex@preview"
   depends_on macos: :sequoia
 
